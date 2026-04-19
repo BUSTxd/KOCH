@@ -209,12 +209,135 @@
   }
   .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 0 20px rgba(26,127,255,0.4); }
   .btn-primary:hover { background: #2e8fff; box-shadow: 0 0 32px rgba(26,127,255,0.7); }
+
+  /* PERSPECTIVAS FLOAT */
+  .persp-tab {
+    position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+    z-index: 200;
+    background: rgba(4,18,34,0.95);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-right: none;
+    border-radius: 12px 0 0 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    transition: all 0.25s;
+    box-shadow: -4px 0 24px rgba(0,212,255,0.08);
+  }
+  .persp-tab:hover {
+    background: rgba(0,212,255,0.08);
+    border-color: var(--cyan);
+    box-shadow: -4px 0 32px rgba(0,212,255,0.2);
+  }
+  .persp-tab-label {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan);
+    writing-mode: vertical-rl; text-orientation: mixed;
+    transform: rotate(180deg);
+  }
+  .persp-tab-icon { font-size: 16px; }
+
+  /* PANEL */
+  .persp-panel {
+    position: fixed; right: -480px; top: 0; bottom: 0;
+    width: 460px; z-index: 300;
+    background: rgba(4,18,34,0.98);
+    border-left: 1px solid rgba(26,127,255,0.2);
+    box-shadow: -20px 0 60px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column;
+    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+    padding: 32px 32px 28px;
+  }
+  .persp-panel.open { right: 0; }
+
+  .persp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .persp-title {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--cyan);
+  }
+  .persp-close {
+    background: none; border: none; color: var(--dim);
+    font-size: 22px; cursor: pointer; line-height: 1;
+    transition: color 0.2s;
+  }
+  .persp-close:hover { color: var(--white); }
+
+  .persp-img-wrap {
+    flex: 1; position: relative; overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid rgba(26,127,255,0.15);
+    background: rgba(2,12,26,0.6);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .persp-img-wrap img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+    transition: opacity 0.25s;
+  }
+  .persp-img-wrap img.fade { opacity: 0; }
+
+  .persp-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 20px; gap: 12px;
+  }
+  .persp-arrow {
+    background: rgba(26,127,255,0.1);
+    border: 1px solid rgba(26,127,255,0.2);
+    border-radius: 8px; color: var(--white);
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .persp-arrow:hover {
+    background: rgba(0,212,255,0.12);
+    border-color: var(--cyan); color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0,212,255,0.2);
+  }
+  .persp-counter {
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    color: var(--dim); letter-spacing: 0.1em; text-align: center; flex: 1;
+  }
+  .persp-name {
+    text-align: center; margin-top: 10px;
+    font-size: 12px; color: var(--dim);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 </style>
 </head>
 <body>
 
 <canvas id="bg-canvas"></canvas>
 <div class="grid-overlay"></div>
+
+<!-- PERSPECTIVAS TAB -->
+<div class="persp-tab" onclick="togglePersp()" title="Perspectivas">
+  <span class="persp-tab-icon">🫀</span>
+  <span class="persp-tab-label">Perspectivas</span>
+</div>
+
+<!-- PERSPECTIVAS PANEL -->
+<div class="persp-panel" id="persp-panel">
+  <div class="persp-header">
+    <span class="persp-title">Perspectivas del Corazón</span>
+    <button class="persp-close" onclick="togglePersp()">×</button>
+  </div>
+  <div class="persp-img-wrap">
+    <img id="persp-img" src="perspectivas/vistacorazon1.webp" alt="Vista del corazón">
+  </div>
+  <p class="persp-name" id="persp-name">Vista 1</p>
+  <div class="persp-nav">
+    <button class="persp-arrow" onclick="changePersp(-1)">‹</button>
+    <span class="persp-counter" id="persp-counter">1 / 6</span>
+    <button class="persp-arrow" onclick="changePersp(1)">›</button>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -247,7 +370,7 @@
         <div class="stat-label">Preguntas</div>
       </div>
       <div class="stat-box">
-        <div class="stat-value">~<span>30</span></div>
+        <div class="stat-value">~<span>15</span></div>
         <div class="stat-label">Minutos</div>
       </div>
       <div class="stat-box">
@@ -271,7 +394,7 @@
       <div class="mode-card" data-mode="1v1" onclick="selectMode(this)">
         <div class="mode-icon">⚡</div>
         <div class="mode-name">1v1</div>
-        <div class="mode-detail">Compite contra otro estudiante en tiempo real</div>
+        <div class="mode-detail">Compite contra tu compañero</div>
       </div>
     </div>
 
@@ -333,6 +456,41 @@ function startExam() {
     btn.innerHTML = 'Iniciar Examen <span class="btn-start-arrow">→</span>';
   }, 800);
 }
+
+// ── Perspectivas ──
+const perspImages = [
+  { src: 'perspectivas/vistacorazon1.webp', name: 'Vista anterior' },
+  { src: 'perspectivas/vistacorazon2.webp', name: 'Vista posterior' },
+  { src: 'perspectivas/vistacorazon3.webp', name: 'Vista lateral derecha' },
+  { src: 'perspectivas/vistacorazon4.webp', name: 'Vista lateral izquierda' },
+  { src: 'perspectivas/vistacorazon5.webp', name: 'Vista superior' },
+  { src: 'perspectivas/vistacorazon6.webp', name: 'Vista inferior' },
+];
+let perspIdx = 0;
+
+function togglePersp() {
+  document.getElementById('persp-panel').classList.toggle('open');
+}
+
+function changePersp(dir) {
+  const img = document.getElementById('persp-img');
+  img.classList.add('fade');
+  setTimeout(() => {
+    perspIdx = (perspIdx + dir + perspImages.length) % perspImages.length;
+    img.src = perspImages[perspIdx].src;
+    img.alt = perspImages[perspIdx].name;
+    document.getElementById('persp-name').textContent = perspImages[perspIdx].name;
+    document.getElementById('persp-counter').textContent = `${perspIdx + 1} / ${perspImages.length}`;
+    img.classList.remove('fade');
+  }, 200);
+}
+
+// Cerrar panel con Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('persp-panel').classList.remove('open');
+  if (e.key === 'ArrowLeft') { if (document.getElementById('persp-panel').classList.contains('open')) changePersp(-1); }
+  if (e.key === 'ArrowRight') { if (document.getElementById('persp-panel').classList.contains('open')) changePersp(1); }
+});
 
 // ── Particle network ──
 const bgCanvas = document.getElementById('bg-canvas');
