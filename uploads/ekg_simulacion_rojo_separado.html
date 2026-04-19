@@ -1,0 +1,79 @@
+
+<canvas id="ekg" width="680" height="220" style="display:block;width:100%;background:#000;border-radius:8px;"></canvas>
+<script>
+const canvas = document.getElementById('ekg');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const mid = H / 2;
+
+const beat = [
+  [0,0],[5,0],[10,0],[15,0],
+  [18,-6],[21,6],[24,0],
+  [27,0],[30,-60],[33,80],[36,-18],[39,0],
+  [42,10],[45,-10],[48,0],
+  [53,0],[58,0],[63,0],[68,0]
+];
+
+const segLen = 68;
+const gap = 120;
+const totalUnit = segLen + gap;
+
+let offset = 0;
+
+function buildBeat(startX) {
+  return beat.map(([x, y]) => ({ x: startX + x, y: mid + y }));
+}
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(200,200,200,0.07)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  const speed = 1.2;
+  offset += speed;
+  if (offset > totalUnit) offset -= totalUnit;
+
+  const beatsNeeded = Math.ceil(W / totalUnit) + 2;
+  const startBeat = -Math.floor(offset / totalUnit) - 1;
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#e22';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#ff3333';
+  ctx.shadowBlur = 6;
+
+  let first = true;
+  for (let b = startBeat; b <= startBeat + beatsNeeded; b++) {
+    const beatStart = b * totalUnit - offset;
+    const pts = buildBeat(beatStart);
+    for (const p of pts) {
+      if (p.x < -5 || p.x > W + 5) continue;
+      if (first) { ctx.moveTo(p.x, p.y); first = false; }
+      else ctx.lineTo(p.x, p.y);
+    }
+    const flatStart = beatStart + segLen;
+    const flatEnd = beatStart + segLen + gap;
+    if (flatEnd > 0 && flatStart < W) {
+      const x0 = Math.max(flatStart, 0);
+      const x1 = Math.min(flatEnd, W);
+      if (!first) ctx.lineTo(x0, mid);
+      else { ctx.moveTo(x0, mid); first = false; }
+      ctx.lineTo(x1, mid);
+    }
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
