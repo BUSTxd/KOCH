@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOCH — Iniciar Examen</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg:   #020c1a;
+    --blue: #1a7fff;
+    --cyan: #00d4ff;
+    --white:#e8f4ff;
+    --dim:  rgba(232,244,255,0.55);
+    --grid: rgba(26,127,255,0.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 60px;
+    background: linear-gradient(180deg, rgba(2,12,26,0.97) 0%, transparent 100%);
+  }
+  .nav-logo {
+    font-weight: 700; font-size: 20px; letter-spacing: 0.12em;
+    color: var(--white); text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-right { display: flex; align-items: center; gap: 20px; }
+  .nav-user-name {
+    font-size: 12px; color: var(--dim); letter-spacing: 0.08em;
+    font-family: 'Space Mono', monospace;
+  }
+  .btn-ghost {
+    background: none; border: none; color: var(--dim);
+    font-family: 'Space Grotesk', sans-serif; font-size: 12px;
+    cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: color 0.2s; padding: 0;
+  }
+  .btn-ghost:hover { color: var(--white); }
+
+  /* MAIN */
+  main {
+    position: relative; z-index: 10;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 100px 40px 60px;
+  }
+
+  .exam-card {
+    width: 100%; max-width: 680px;
+    background: rgba(4,18,34,0.85);
+    border: 1px solid rgba(26,127,255,0.2);
+    border-radius: 24px;
+    padding: 56px 56px 48px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 80px rgba(26,127,255,0.06);
+    animation: fadeUp 0.7s 0.1s both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(24px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .exam-tag {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--cyan);
+    margin-bottom: 12px;
+  }
+  .exam-title {
+    font-size: clamp(28px, 4vw, 40px); font-weight: 700;
+    line-height: 1.1; margin-bottom: 8px;
+  }
+  .exam-title span { color: var(--cyan); }
+  .exam-desc {
+    font-size: 14px; color: var(--dim); margin-bottom: 44px; line-height: 1.6;
+  }
+
+  /* STATS ROW */
+  .exam-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-bottom: 44px;
+  }
+  .stat-box {
+    background: rgba(26,127,255,0.06);
+    border: 1px solid rgba(26,127,255,0.15);
+    border-radius: 12px; padding: 20px 16px; text-align: center;
+  }
+  .stat-value {
+    font-size: 32px; font-weight: 700; color: var(--white);
+    font-family: 'Space Mono', monospace; line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-value span { font-size: 14px; color: var(--cyan); }
+  .stat-label {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--dim); font-family: 'Space Mono', monospace;
+  }
+
+  /* MODE SELECTOR */
+  .section-label {
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--dim); font-family: 'Space Mono', monospace;
+    margin-bottom: 14px;
+  }
+  .mode-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-bottom: 40px;
+  }
+  .mode-card {
+    background: rgba(2,12,26,0.6);
+    border: 1.5px solid rgba(26,127,255,0.15);
+    border-radius: 14px; padding: 22px 16px;
+    cursor: pointer; text-align: center;
+    transition: all 0.22s;
+    user-select: none;
+  }
+  .mode-card:hover {
+    border-color: rgba(0,212,255,0.35);
+    background: rgba(0,212,255,0.04);
+  }
+  .mode-card.selected {
+    border-color: var(--cyan);
+    background: rgba(0,212,255,0.08);
+    box-shadow: 0 0 24px rgba(0,212,255,0.12), inset 0 0 20px rgba(0,212,255,0.04);
+  }
+  .mode-icon {
+    font-size: 26px; margin-bottom: 10px; line-height: 1;
+  }
+  .mode-name {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
+    margin-bottom: 4px; text-transform: uppercase;
+  }
+  .mode-card.selected .mode-name { color: var(--cyan); }
+  .mode-detail {
+    font-size: 11px; color: var(--dim); line-height: 1.4;
+  }
+
+  /* START BUTTON */
+  .btn-start {
+    width: 100%;
+    padding: 18px 40px;
+    background: var(--blue); color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 0 28px rgba(26,127,255,0.45);
+    transition: all 0.25s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-start:hover {
+    background: #2e8fff;
+    box-shadow: 0 0 48px rgba(26,127,255,0.7);
+    transform: translateY(-2px);
+  }
+  .btn-start:disabled {
+    opacity: 0.4; cursor: not-allowed; transform: none;
+    box-shadow: none;
+  }
+  .btn-start-arrow {
+    font-size: 18px; transition: transform 0.2s;
+  }
+  .btn-start:hover .btn-start-arrow { transform: translateX(4px); }
+
+  .start-hint {
+    text-align: center; margin-top: 14px;
+    font-size: 12px; color: var(--dim);
+    font-family: 'Space Mono', monospace; letter-spacing: 0.05em;
+    min-height: 18px;
+  }
+
+  /* AUTH GUARD */
+  .auth-guard {
+    display: none; text-align: center; padding: 60px 20px;
+  }
+  .auth-guard p {
+    font-size: 15px; color: var(--dim); margin-bottom: 24px;
+  }
+  .btn {
+    padding: 12px 28px; border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; cursor: pointer; border: none;
+    transition: all 0.25s; text-decoration: none;
+    display: inline-flex; align-items: center;
+  }
+  .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 0 20px rgba(26,127,255,0.4); }
+  .btn-primary:hover { background: #2e8fff; box-shadow: 0 0 32px rgba(26,127,255,0.7); }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="grid-overlay"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <img src="logo.png" alt="K" style="height:28px;width:28px;object-fit:contain;">KOCH
+  </a>
+  <div class="nav-right">
+    <span class="nav-user-name" id="nav-user-name"></span>
+    <button onclick="handleLogout()" class="btn-ghost">Salir</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main>
+  <!-- Si no está logueado -->
+  <div class="auth-guard" id="auth-guard">
+    <p>Debes iniciar sesión para acceder al examen.</p>
+    <a href="index.html" class="btn btn-primary">Volver al inicio</a>
+  </div>
+
+  <!-- Pantalla de inicio de examen -->
+  <div class="exam-card" id="exam-card" style="display:none;">
+    <p class="exam-tag">Anatomía Cardíaca · UPCH</p>
+    <h1 class="exam-title">Iniciar <span>Examen</span></h1>
+    <p class="exam-desc">Selecciona el modo de juego y prepárate. Las preguntas cubren estructuras cardíacas, irrigación e inervación.</p>
+
+    <div class="exam-stats">
+      <div class="stat-box">
+        <div class="stat-value">74</div>
+        <div class="stat-label">Preguntas</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">~<span>30</span></div>
+        <div class="stat-label">Minutos</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-mode-short">—</div>
+        <div class="stat-label">Modo</div>
+      </div>
+    </div>
+
+    <p class="section-label">Elige tu modo</p>
+    <div class="mode-grid">
+      <div class="mode-card" data-mode="solitario" onclick="selectMode(this)">
+        <div class="mode-icon">🧠</div>
+        <div class="mode-name">Solitario</div>
+        <div class="mode-detail">Practica a tu propio ritmo sin presión</div>
+      </div>
+      <div class="mode-card" data-mode="aprendizaje" onclick="selectMode(this)">
+        <div class="mode-icon">📖</div>
+        <div class="mode-name">Aprendizaje</div>
+        <div class="mode-detail">Ve las respuestas correctas al instante</div>
+      </div>
+      <div class="mode-card" data-mode="1v1" onclick="selectMode(this)">
+        <div class="mode-icon">⚡</div>
+        <div class="mode-name">1v1</div>
+        <div class="mode-detail">Compite contra otro estudiante en tiempo real</div>
+      </div>
+    </div>
+
+    <button class="btn-start" id="btn-start" disabled onclick="startExam()">
+      Iniciar Examen <span class="btn-start-arrow">→</span>
+    </button>
+    <p class="start-hint" id="start-hint">Selecciona un modo para continuar</p>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL     = 'https://jdqarjjzcxwwgywiglxy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ghflrjFyupHo6y6ZkAb2cg_nnmY2mTQ';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let selectedMode = null;
+const modeLabels = { solitario: 'SOLO', aprendizaje: 'LEARN', '1v1': '1V1' };
+const modeHints  = {
+  solitario:   '74 preguntas · sin límite de tiempo',
+  aprendizaje: '74 preguntas · feedback inmediato',
+  '1v1':       '74 preguntas · busca oponente...'
+};
+
+// Auth guard
+_supabase.auth.getSession().then(({ data: { session } }) => {
+  if (!session) {
+    document.getElementById('auth-guard').style.display = 'block';
+  } else {
+    const name = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+    document.getElementById('nav-user-name').textContent = name;
+    document.getElementById('exam-card').style.display = 'block';
+  }
+});
+
+async function handleLogout() {
+  await _supabase.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+function selectMode(el) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedMode = el.dataset.mode;
+
+  document.getElementById('stat-mode-short').textContent = modeLabels[selectedMode];
+  document.getElementById('start-hint').textContent = modeHints[selectedMode];
+  document.getElementById('btn-start').disabled = false;
+}
+
+function startExam() {
+  if (!selectedMode) return;
+  const btn = document.getElementById('btn-start');
+  btn.disabled = true;
+  btn.innerHTML = 'Cargando... <span class="btn-start-arrow">⏳</span>';
+  // TODO: redirigir a exam.html?mode=selectedMode
+  setTimeout(() => {
+    alert(`Modo "${selectedMode}" seleccionado. Próximamente: pantalla de examen.`);
+    btn.disabled = false;
+    btn.innerHTML = 'Iniciar Examen <span class="btn-start-arrow">→</span>';
+  }, 800);
+}
+
+// ── Particle network ──
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() { bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight; }
+function initParticles(n) {
+  particles = Array.from({ length: n }, () => ({
+    x: Math.random() * bgCanvas.width,
+    y: Math.random() * bgCanvas.height,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: Math.random() * 1.5 + 0.5
+  }));
+}
+function drawParticles() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  const g = bgCtx.createRadialGradient(bgCanvas.width*.5, bgCanvas.height*.4, 0, bgCanvas.width*.5, bgCanvas.height*.4, bgCanvas.width*.7);
+  g.addColorStop(0, 'rgba(10,40,80,0.4)'); g.addColorStop(1, 'rgba(2,12,26,0)');
+  bgCtx.fillStyle = g; bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 130) {
+        bgCtx.beginPath(); bgCtx.moveTo(particles[i].x, particles[i].y); bgCtx.lineTo(particles[j].x, particles[j].y);
+        bgCtx.strokeStyle = `rgba(26,127,255,${0.12*(1-d/130)})`; bgCtx.lineWidth = 0.6; bgCtx.stroke();
+      }
+    }
+  }
+  for (const p of particles) {
+    bgCtx.beginPath(); bgCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    bgCtx.fillStyle = 'rgba(0,212,255,0.5)'; bgCtx.fill();
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > bgCanvas.width)  p.vx *= -1;
+    if (p.y < 0 || p.y > bgCanvas.height) p.vy *= -1;
+  }
+  requestAnimationFrame(drawParticles);
+}
+resizeCanvas(); initParticles(50); drawParticles();
+window.addEventListener('resize', () => { resizeCanvas(); initParticles(50); });
+</script>
+</body>
+</html>
