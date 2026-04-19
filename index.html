@@ -796,10 +796,15 @@ async function handleRegister(e) {
   btn.textContent = 'Creando cuenta...';
   errorEl.textContent = '';
 
+  const redirectTo = window.location.origin + window.location.pathname.replace('index.html', '') + 'dashboard.html';
+
   const { error } = await _supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: name } }
+    options: {
+      data: { full_name: name },
+      emailRedirectTo: redirectTo
+    }
   });
 
   if (error) {
