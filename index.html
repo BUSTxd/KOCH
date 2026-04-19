@@ -808,7 +808,16 @@ async function handleRegister(e) {
   });
 
   if (error) {
-    errorEl.textContent = error.message;
+    const msg = error.message.toLowerCase();
+    if (msg.includes('rate limit') || msg.includes('email rate')) {
+      errorEl.textContent = 'Límite de correos alcanzado. Espera unos minutos e intenta de nuevo.';
+    } else if (msg.includes('already registered') || msg.includes('user already')) {
+      errorEl.textContent = 'Este correo ya tiene una cuenta. Inicia sesión.';
+    } else if (msg.includes('invalid email') || msg.includes('unable to validate')) {
+      errorEl.textContent = 'Correo inválido. Verifica que esté bien escrito.';
+    } else {
+      errorEl.textContent = error.message;
+    }
     btn.disabled = false;
     btn.textContent = 'Registrarse';
     return;
