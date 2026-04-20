@@ -576,12 +576,7 @@ function startExam() {
   const btn = document.getElementById('btn-start');
   btn.disabled = true;
   btn.innerHTML = 'Cargando... <span class="btn-start-arrow">⏳</span>';
-  // TODO: redirigir a exam.html?mode=selectedMode
-  setTimeout(() => {
-    alert(`Modo "${selectedMode}" seleccionado. Próximamente: pantalla de examen.`);
-    btn.disabled = false;
-    btn.innerHTML = 'Iniciar Examen <span class="btn-start-arrow">→</span>';
-  }, 800);
+  window.location.href = `exam.html?mode=${encodeURIComponent(selectedMode)}`;
 }
 
 // ── Perspectivas ──

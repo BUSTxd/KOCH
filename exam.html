@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOCH — Examen</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg:   #020c1a;
+    --blue: #1a7fff;
+    --cyan: #00d4ff;
+    --white:#e8f4ff;
+    --dim:  rgba(232,244,255,0.55);
+    --grid: rgba(26,127,255,0.07);
+    --correct: #2e8fff;
+    --wrong:   #ff5b5b;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    overflow-x: hidden; min-height: 100vh;
+  }
+  #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 60px;
+    background: linear-gradient(180deg, rgba(2,12,26,0.97) 0%, transparent 100%);
+  }
+  .nav-logo {
+    font-weight: 700; font-size: 20px; letter-spacing: 0.12em;
+    color: var(--white); text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-right { display: flex; align-items: center; gap: 20px; }
+  .nav-user-name {
+    font-size: 12px; color: var(--dim); letter-spacing: 0.08em;
+    font-family: 'Space Mono', monospace;
+  }
+  .btn-ghost {
+    background: none; border: none; color: var(--dim);
+    font-family: 'Space Grotesk', sans-serif; font-size: 12px;
+    cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: color 0.2s; padding: 0;
+  }
+  .btn-ghost:hover { color: var(--white); }
+
+  /* MAIN */
+  main {
+    position: relative; z-index: 10;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 90px 30px 40px;
+  }
+
+  .auth-guard, .exam-end { display: none; }
+  .auth-guard.active, .exam-end.active { display: block; }
+
+  /* EXAM CARD */
+  .exam-wrap {
+    width: 100%; max-width: 780px;
+  }
+  .exam-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 20px;
+  }
+  .progress-info {
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    color: var(--dim); letter-spacing: 0.16em;
+  }
+  .progress-info b { color: var(--white); font-weight: 700; }
+  .mode-badge {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--cyan);
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .progress-bar {
+    height: 3px; background: rgba(26,127,255,0.12); border-radius: 2px;
+    margin-bottom: 22px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan));
+    transition: width 0.3s ease;
+  }
+
+  /* 1V1 SCOREBOARD */
+  .scoreboard {
+    display: none;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 14px; align-items: center;
+    margin-bottom: 22px;
+  }
+  .scoreboard.show { display: grid; }
+  .player-card {
+    background: rgba(4,18,34,0.7);
+    border: 1px solid rgba(26,127,255,0.15);
+    border-radius: 12px; padding: 14px 18px;
+    text-align: center; transition: all 0.25s;
+  }
+  .player-card.active {
+    border-color: var(--cyan);
+    background: rgba(0,212,255,0.08);
+    box-shadow: 0 0 24px rgba(0,212,255,0.12);
+  }
+  .player-name {
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--dim); font-family: 'Space Mono', monospace; margin-bottom: 6px;
+  }
+  .player-card.active .player-name { color: var(--cyan); }
+  .player-score {
+    display: flex; justify-content: center; gap: 14px;
+    font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700;
+  }
+  .player-score .ok { color: var(--correct); }
+  .player-score .err { color: var(--wrong); }
+  .vs {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.3em; color: var(--dim);
+  }
+
+  /* QUESTION CARD */
+  .question-card {
+    background: rgba(4,18,34,0.88);
+    border: 1px solid rgba(26,127,255,0.2);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 60px rgba(26,127,255,0.04);
+  }
+  .learn-label {
+    display: none;
+    font-size: clamp(22px, 3.2vw, 32px); font-weight: 700;
+    text-align: center; color: var(--cyan);
+    margin-bottom: 20px; letter-spacing: -0.01em;
+    text-shadow: 0 0 40px rgba(0,212,255,0.25);
+  }
+  .learn-label.show { display: block; }
+
+  .image-viewer {
+    position: relative; width: 100%;
+    aspect-ratio: 4 / 3;
+    background: rgba(2,12,26,0.6);
+    border: 1px solid rgba(26,127,255,0.12);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .image-viewer img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    transition: opacity 0.25s;
+  }
+  .image-viewer img.fade { opacity: 0; }
+  .persp-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px;
+    background: rgba(2,12,26,0.75);
+    border: 1px solid rgba(0,212,255,0.35);
+    border-radius: 50%; color: var(--cyan);
+    font-size: 22px; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    z-index: 5;
+  }
+  .persp-btn.show { display: flex; }
+  .persp-btn:hover {
+    background: rgba(0,212,255,0.15);
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .persp-prev { left: 12px; }
+  .persp-next { right: 12px; }
+  .persp-indicator {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    background: rgba(2,12,26,0.85);
+    border: 1px solid rgba(26,127,255,0.2);
+    border-radius: 999px; padding: 4px 12px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: var(--dim); letter-spacing: 0.12em;
+    display: none;
+  }
+  .persp-indicator.show { display: block; }
+
+  /* ANSWER AREA */
+  .answer-area {
+    margin-top: 24px;
+    display: flex; gap: 10px;
+  }
+  .answer-area.hide { display: none; }
+  .answer-area input {
+    flex: 1;
+    background: rgba(2,12,26,0.8);
+    border: 1px solid rgba(26,127,255,0.25);
+    border-radius: 10px; padding: 14px 18px;
+    color: var(--white); font-family: 'Space Grotesk', sans-serif; font-size: 15px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .answer-area input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+  }
+  .answer-area input:disabled { opacity: 0.7; cursor: not-allowed; }
+  .btn {
+    padding: 14px 24px; border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; cursor: pointer; border: none;
+    transition: all 0.2s; text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary {
+    background: var(--blue); color: #fff;
+    box-shadow: 0 0 20px rgba(26,127,255,0.35);
+  }
+  .btn-primary:hover {
+    background: #2e8fff;
+    box-shadow: 0 0 32px rgba(26,127,255,0.6);
+    transform: translateY(-1px);
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* FEEDBACK */
+  .feedback {
+    display: none;
+    margin-top: 20px; padding: 18px 20px;
+    border-radius: 12px;
+    text-align: center;
+    animation: fbIn 0.3s ease;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct {
+    background: rgba(46,143,255,0.1);
+    border: 1px solid rgba(46,143,255,0.4);
+  }
+  .feedback.wrong {
+    background: rgba(255,91,91,0.1);
+    border: 1px solid rgba(255,91,91,0.4);
+  }
+  .feedback-label {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    margin-bottom: 6px; color: var(--dim);
+  }
+  .feedback-name {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .feedback.correct .feedback-name { color: var(--correct); }
+  .feedback.wrong .feedback-name { color: var(--wrong); }
+  @keyframes fbIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* NEXT BUTTON */
+  .next-row {
+    margin-top: 22px;
+    display: flex; justify-content: center;
+  }
+  .next-row.hide { display: none; }
+
+  /* END SCREEN */
+  .end-card {
+    width: 100%; max-width: 560px;
+    background: rgba(4,18,34,0.9);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 20px;
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: 0 40px 90px rgba(0,0,0,0.5), 0 0 80px rgba(0,212,255,0.06);
+  }
+  .end-icon { font-size: 56px; margin-bottom: 20px; }
+  .end-title {
+    font-size: clamp(32px, 5vw, 48px); font-weight: 700;
+    margin-bottom: 8px; letter-spacing: -0.02em;
+  }
+  .end-title span { color: var(--cyan); }
+  .end-subtitle {
+    font-size: 14px; color: var(--dim); margin-bottom: 40px; line-height: 1.6;
+  }
+  .final-scores {
+    display: none;
+    margin-bottom: 32px;
+  }
+  .final-scores.show { display: block; }
+  .final-player {
+    display: grid; grid-template-columns: 1fr auto auto;
+    gap: 20px; align-items: center;
+    padding: 16px 20px;
+    background: rgba(4,18,34,0.6);
+    border: 1px solid rgba(26,127,255,0.15);
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .final-player.winner {
+    border-color: var(--cyan);
+    box-shadow: 0 0 24px rgba(0,212,255,0.15);
+    background: rgba(0,212,255,0.06);
+  }
+  .final-player-name {
+    font-size: 14px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; text-align: left;
+  }
+  .final-player.winner .final-player-name { color: var(--cyan); }
+  .final-stat {
+    font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+  }
+  .final-stat.ok { color: var(--correct); }
+  .final-stat.err { color: var(--wrong); }
+  .winner-banner {
+    margin-top: 18px;
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--cyan);
+  }
+
+  .btn-home {
+    width: 100%; padding: 16px;
+    background: var(--blue); color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; cursor: pointer;
+    box-shadow: 0 0 24px rgba(26,127,255,0.4);
+    transition: all 0.25s; text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-home:hover {
+    background: #2e8fff;
+    box-shadow: 0 0 40px rgba(26,127,255,0.6);
+    transform: translateY(-2px);
+  }
+
+  /* TURN INDICATOR */
+  .turn-banner {
+    display: none;
+    text-align: center; margin-bottom: 16px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .turn-banner.show { display: block; }
+
+  @media (max-width: 640px) {
+    nav { padding: 14px 20px; }
+    main { padding: 80px 16px 30px; }
+    .question-card { padding: 20px; }
+    .scoreboard { grid-template-columns: 1fr; }
+    .vs { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="grid-overlay"></div>
+
+<nav>
+  <a href="dashboard.html" class="nav-logo">
+    <img src="logo.png" alt="K" style="height:28px;width:28px;object-fit:contain;">KOCH
+  </a>
+  <div class="nav-right">
+    <span class="nav-user-name" id="nav-user-name"></span>
+    <button onclick="handleLogout()" class="btn-ghost">Salir</button>
+  </div>
+</nav>
+
+<main>
+  <div class="auth-guard" id="auth-guard">
+    <p style="font-size:15px; color:var(--dim); margin-bottom:24px; text-align:center;">Debes iniciar sesión para acceder al examen.</p>
+    <div style="text-align:center;"><a href="index.html" class="btn btn-primary">Volver al inicio</a></div>
+  </div>
+
+  <div class="exam-wrap" id="exam-wrap" style="display:none;">
+    <div class="exam-header">
+      <div class="progress-info">Pregunta <b id="q-current">1</b> / <b id="q-total">70</b></div>
+      <div class="mode-badge" id="mode-badge">SOLITARIO</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+    <div class="scoreboard" id="scoreboard">
+      <div class="player-card active" id="player-1">
+        <div class="player-name">Estudioso 1</div>
+        <div class="player-score">
+          <span class="ok" id="p1-ok">0✓</span>
+          <span class="err" id="p1-err">0✗</span>
+        </div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="player-card" id="player-2">
+        <div class="player-name">Estudioso 2</div>
+        <div class="player-score">
+          <span class="ok" id="p2-ok">0✓</span>
+          <span class="err" id="p2-err">0✗</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="turn-banner" id="turn-banner">Turno de Estudioso 1</div>
+
+    <div class="question-card">
+      <div class="learn-label" id="learn-label"></div>
+
+      <div class="image-viewer">
+        <button class="persp-btn persp-prev" id="persp-prev" onclick="changePerspective(-1)">‹</button>
+        <img id="q-img" src="" alt="">
+        <button class="persp-btn persp-next" id="persp-next" onclick="changePerspective(1)">›</button>
+        <div class="persp-indicator" id="persp-indicator">1 / 1</div>
+      </div>
+
+      <div class="answer-area" id="answer-area">
+        <input type="text" id="answer-input" placeholder="Escribe el nombre de la estructura..." autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="answer-btn" onclick="submitAnswer()">Validar</button>
+      </div>
+
+      <div class="feedback" id="feedback">
+        <div class="feedback-label" id="feedback-label">Respuesta correcta</div>
+        <div class="feedback-name" id="feedback-name"></div>
+      </div>
+
+      <div class="next-row hide" id="next-row">
+        <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="exam-end" id="exam-end">
+    <div class="end-card">
+      <div class="end-icon">🎉</div>
+      <h1 class="end-title">¡Felicidades!</h1>
+      <p class="end-subtitle" id="end-subtitle">Completaste las 70 preguntas del examen.</p>
+
+      <div class="final-scores" id="final-scores">
+        <div class="final-player" id="final-p1">
+          <div class="final-player-name">Estudioso 1</div>
+          <div class="final-stat ok" id="final-p1-ok">0✓</div>
+          <div class="final-stat err" id="final-p1-err">0✗</div>
+        </div>
+        <div class="final-player" id="final-p2">
+          <div class="final-player-name">Estudioso 2</div>
+          <div class="final-stat ok" id="final-p2-ok">0✓</div>
+          <div class="final-stat err" id="final-p2-err">0✗</div>
+        </div>
+        <div class="winner-banner" id="winner-banner"></div>
+      </div>
+
+      <a href="dashboard.html" class="btn-home">Volver al inicio ↑</a>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ──────────────  SUPABASE / AUTH GUARD ────────────── */
+const SUPABASE_URL      = 'https://jdqarjjzcxwwgywiglxy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ghflrjFyupHo6y6ZkAb2cg_nnmY2mTQ';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+_supabase.auth.getSession().then(({ data: { session } }) => {
+  if (!session) {
+    document.getElementById('auth-guard').classList.add('active');
+    return;
+  }
+  const name = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+  document.getElementById('nav-user-name').textContent = name;
+  document.getElementById('exam-wrap').style.display = 'block';
+  init();
+});
+
+async function handleLogout() {
+  await _supabase.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+/* ──────────────  BANCO DE PREGUNTAS ──────────────
+   75 imágenes consolidadas en 70 preguntas únicas.
+   4 estructuras con perspectivas múltiples agrupadas. */
+const QUESTIONS = [
+  { name: 'Arteria interventricular anterior (descendente posterior)', images: ['imagenes/Arteria interventricular anterior (descendente posterior).webp'] },
+  { name: 'Arteria interventricular anterior',                         images: ['imagenes/Arteria interventricular anterior.webp'] },
+  { name: 'Arteria marginal izquierda',                                images: ['imagenes/Arteria marginal izquierda.webp'] },
+  { name: 'Cuerdas tendinosas de la válvula tricúspide',               images: ['imagenes/Cuerdas tendinosas de la válvula tricuspide.webp'] },
+  { name: 'Fibras de Purkinje',                                        images: ['imagenes/Fibras de Purkinje.webp'] },
+  { name: 'Nervio cardiaco medio derecho',                             images: ['imagenes/Nervio Cardiaco Medio derecho.webp'] },
+  { name: 'Nervio cardiaco inferior derecho',                          images: ['imagenes/Nervio cardiaco inferior derecho.webp'] },
+  { name: 'Nervio cardiaco medio izquierdo',                           images: ['imagenes/Nervio cardiaco medio izquierdo.webp'] },
+  { name: 'Nervio vago izquierdo',                                     images: ['imagenes/Nervio vago Izquierdo.webp'] },
+  { name: 'Rama pulmonar derecha',                                     images: ['imagenes/Rama pulmonar derecha.webp'] },
+  { name: 'Tronco simpático ganglionar torácico izquierdo',            images: ['imagenes/Tronco simpático ganglionar torácico izquierdo.webp'] },
+  { name: 'Vena cardíaca menor',                                       images: ['imagenes/Vena cardiaca menor.webp'] },
+  { name: 'Vena cava superior',                                        images: ['imagenes/Vena cava superior.webp'] },
+  { name: 'Vena marginal izquierda',                                   images: ['imagenes/Vena marginal izquierda.webp'] },
+  { name: 'Venas del ventrículo izquierdo',                            images: ['imagenes/Venas del ventriculo izquierdo.webp'] },
+  // GROUP: Ventrículo Izquierdo (3 perspectivas)
+  { name: 'Ventrículo izquierdo', images: [
+    'imagenes/Ventriculo Izquierdo.webp',
+    'imagenes/Ventriculo izq.webp',
+    'imagenes/ventriculo izquierdo2.webp'
+  ]},
+  { name: 'Aorta ascendente',                                          images: ['imagenes/aorta ascendente.webp'] },
+  { name: 'Aorta descendente',                                         images: ['imagenes/aorta descendente.webp'] },
+  { name: 'Arco de la aorta',                                          images: ['imagenes/arco de la aorta.webp'] },
+  // GROUP: Arteria Coronaria Derecha (2 perspectivas)
+  { name: 'Arteria coronaria derecha', images: [
+    'imagenes/arteria coronaria derecha.webp',
+    'imagenes/arteria coronaria derecha 1.2.webp'
+  ]},
+  { name: 'Arteria coronaria izquierda',                               images: ['imagenes/arteria coronaria izquierda.webp'] },
+  { name: 'Arteria marginal derecha',                                  images: ['imagenes/arteria marginal derecha.webp'] },
+  { name: 'Arteria posterior del ventrículo izquierdo',                images: ['imagenes/arteria posterior del ventriculo izquierdo.webp'] },
+  { name: 'Aurícula derecha',                                          images: ['imagenes/auricula derecha.webp'] },
+  { name: 'Aurícula izquierda',                                        images: ['imagenes/auricula izquierda.webp'] },
+  { name: 'Cuerdas tendinosas de la válvula mitral',                   images: ['imagenes/cuerdas tendinosas de la válvula mitral.webp'] },
+  { name: 'Ganglio cardiaco',                                          images: ['imagenes/ganglio cardiaco.webp'] },
+  { name: 'Haces internodales',                                        images: ['imagenes/haces internodales.webp'] },
+  { name: 'Ligamento arterioso',                                       images: ['imagenes/ligamento arterioso.webp'] },
+  { name: 'Nervio cardiaco inferior izquierdo',                        images: ['imagenes/nervio cardiaco inferior izquierdo.webp'] },
+  { name: 'Nervio cardiaco superior izquierdo',                        images: ['imagenes/nervio cardiaco superior izquierdo.webp'] },
+  // GROUP: Nodo AV (2 perspectivas)
+  { name: 'Nodo AV', images: [
+    'imagenes/nodo av.webp',
+    'imagenes/nodo av (1).webp'
+  ]},
+  { name: 'Nódulo sinusal',                                            images: ['imagenes/nodulo sinusal.webp'] },
+  { name: 'Orejuela derecha',                                          images: ['imagenes/orejuela derecha.webp'] },
+  { name: 'Orejuela izquierda',                                        images: ['imagenes/orejuela izquierda.webp'] },
+  { name: 'Plexo cardiaco',                                            images: ['imagenes/plexo cardiaco.webp'] },
+  { name: 'Rama atrial de la arteria circunfleja izquierda',           images: ['imagenes/rama atrial de la arteria circunfleja izquierda.webp'] },
+  { name: 'Rama auricular de la arteria coronaria derecha',            images: ['imagenes/rama auricular de la arteria coronaria derecha.webp'] },
+  { name: 'Rama cardíaca cervical inferior izquierda',                 images: ['imagenes/rama cardiaca cervical inferior izquierda.webp'] },
+  { name: 'Rama cardíaca cervical superior izquierda',                 images: ['imagenes/rama cardiaca cervical superior izquierda.webp'] },
+  { name: 'Rama cardíaca torácica derecha',                            images: ['imagenes/rama cardiaca toracica derecha.webp'] },
+  { name: 'Rama cardíaca cervical superior derecha',                   images: ['imagenes/rama cardíaca cervical superior derecha.webp'] },
+  { name: 'Rama circunfleja de la arteria coronaria izquierda',        images: ['imagenes/rama circunfleja de la arteria coronaria izquierda.webp'] },
+  { name: 'Rama del nodo AV de la arteria coronaria derecha',          images: ['imagenes/rama del nodo AV de la arteria coronaria derecha.webp'] },
+  { name: 'Rama del nodo sinoauricular (arteria coronaria derecha)',   images: ['imagenes/rama del nodo sinoauricular (arteria coronaria derecha).webp'] },
+  { name: 'Rama derecha inferior cervical cardiaca',                   images: ['imagenes/rama derecha inferior cervical cardiaca.webp'] },
+  { name: 'Rama diagonal de la arteria interventricular anterior',     images: ['imagenes/rama diagonal de la arteria interventricular anterior.webp'] },
+  { name: 'Rama infundibular de la arteria coronaria derecha',         images: ['imagenes/rama infundibular de la arteria coronaria derecha.webp'] },
+  { name: 'Rama izquierda del haz de His',                             images: ['imagenes/rama izquierda del haz de his.webp'] },
+  { name: 'Rama posterolateral derecha',                               images: ['imagenes/rama posterolateral derecha.webp'] },
+  { name: 'Rama torácica cardiaca izquierda',                          images: ['imagenes/rama toracica cardiaca izquierda.webp'] },
+  { name: 'Ramas septales de la arteria interventricular anterior',    images: ['imagenes/ramas septales de la arteria interventricular anterior.webp'] },
+  { name: 'Seno coronario',                                            images: ['imagenes/seno coronario.webp'] },
+  { name: 'Septo interauricular',                                      images: ['imagenes/septo interauricular.webp'] },
+  { name: 'Septo interventricular',                                    images: ['imagenes/septo interventricular.webp'] },
+  { name: 'Tronco pulmonar',                                           images: ['imagenes/tronco pulmonar.webp'] },
+  { name: 'Tronco torácico ganglionar simpático derecho',              images: ['imagenes/tronco torácico ganglionar simpático derecho.webp'] },
+  { name: 'Vago derecho',                                              images: ['imagenes/vago derecho.webp'] },
+  { name: 'Válvula aórtica',                                           images: ['imagenes/valvula aortica.webp'] },
+  { name: 'Válvula mitral',                                            images: ['imagenes/valvula mitral (1).webp'] },
+  { name: 'Válvula tricúspide',                                        images: ['imagenes/valvula tricuspide.webp'] },
+  { name: 'Vena cardíaca anterior',                                    images: ['imagenes/vena cardiaca anterior.webp'] },
+  { name: 'Vena cardíaca mayor',                                       images: ['imagenes/vena cardiaca mayor.webp'] },
+  { name: 'Vena cardíaca media',                                       images: ['imagenes/vena cardiaca media.webp'] },
+  { name: 'Vena cava inferior',                                        images: ['imagenes/vena cava inferior.webp'] },
+  { name: 'Vena interventricular anterior',                            images: ['imagenes/vena interventricular anterior.webp'] },
+  { name: 'Vena marginal derecha',                                     images: ['imagenes/vena marginal derecha.webp'] },
+  { name: 'Vena oblicua de la aurícula izquierda (vena de Marshall)',  images: ['imagenes/vena oblicua de la aurícula izquierda (vena de Marshall).webp'] },
+  { name: 'Vena posterior del ventrículo izquierdo',                   images: ['imagenes/vena posterior del ventriculo izquierdo.webp'] },
+  // GROUP: Válvula Pulmonar (2 perspectivas)
+  { name: 'Válvula pulmonar', images: [
+    'imagenes/válvula pulmonar.webp',
+    'imagenes/válvula pulmonar 1.2.webp'
+  ]},
+];
+const TOTAL = QUESTIONS.length; // 70
+
+/* ──────────────  ESTADO ────────────── */
+const state = {
+  mode: 'solitario',     // 'solitario' | 'aprendizaje' | '1v1'
+  order: [],             // índices aleatorios
+  current: 0,
+  perspective: 0,
+  answered: false,
+  currentPlayer: 1,      // solo 1v1
+  scores: { 1: { ok: 0, err: 0 }, 2: { ok: 0, err: 0 } }
+};
+
+/* ──────────────  UTILIDADES ────────────── */
+function normalize(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // acentos
+    .replace(/[()]/g, ' ')              // paréntesis
+    .replace(/[^a-z0-9\s]/g, '')        // otros símbolos
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ──────────────  INICIALIZACIÓN ────────────── */
+function init() {
+  const params = new URLSearchParams(window.location.search);
+  state.mode = params.get('mode') || 'solitario';
+
+  const labels = { solitario: 'SOLITARIO', aprendizaje: 'APRENDIZAJE', '1v1': '1 VS 1' };
+  document.getElementById('mode-badge').textContent = labels[state.mode] || 'SOLITARIO';
+  document.getElementById('q-total').textContent = TOTAL;
+
+  if (state.mode === '1v1') {
+    document.getElementById('scoreboard').classList.add('show');
+    document.getElementById('turn-banner').classList.add('show');
+  }
+
+  state.order = shuffle([...Array(TOTAL).keys()]);
+  renderQuestion();
+}
+
+/* ──────────────  RENDER ────────────── */
+function currentQuestion() {
+  return QUESTIONS[state.order[state.current]];
+}
+
+function renderQuestion() {
+  const q = currentQuestion();
+  state.perspective = 0;
+  state.answered = false;
+
+  // progress
+  document.getElementById('q-current').textContent = state.current + 1;
+  document.getElementById('progress-fill').style.width = (state.current / TOTAL * 100) + '%';
+
+  // image (lazy)
+  const img = document.getElementById('q-img');
+  img.classList.add('fade');
+  setTimeout(() => {
+    img.src = encodeURI(q.images[0]);
+    img.alt = q.name;
+    img.classList.remove('fade');
+  }, 120);
+
+  // perspectivas
+  const hasMulti = q.images.length > 1;
+  document.getElementById('persp-prev').classList.toggle('show', hasMulti);
+  document.getElementById('persp-next').classList.toggle('show', hasMulti);
+  const ind = document.getElementById('persp-indicator');
+  ind.classList.toggle('show', hasMulti);
+  if (hasMulti) ind.textContent = `1 / ${q.images.length}`;
+
+  // modo-específico
+  const learnLabel = document.getElementById('learn-label');
+  const answerArea = document.getElementById('answer-area');
+  const feedback = document.getElementById('feedback');
+  const nextRow = document.getElementById('next-row');
+  const input = document.getElementById('answer-input');
+  const answerBtn = document.getElementById('answer-btn');
+
+  feedback.classList.remove('show', 'correct', 'wrong');
+  input.value = '';
+  input.disabled = false;
+  answerBtn.disabled = false;
+
+  if (state.mode === 'aprendizaje') {
+    learnLabel.classList.add('show');
+    learnLabel.textContent = q.name;
+    answerArea.classList.add('hide');
+    nextRow.classList.remove('hide');
+  } else {
+    learnLabel.classList.remove('show');
+    answerArea.classList.remove('hide');
+    nextRow.classList.add('hide');
+    setTimeout(() => input.focus(), 50);
+  }
+
+  // 1v1 turno
+  if (state.mode === '1v1') {
+    document.getElementById('turn-banner').textContent = `Turno de Estudioso ${state.currentPlayer}`;
+    document.getElementById('player-1').classList.toggle('active', state.currentPlayer === 1);
+    document.getElementById('player-2').classList.toggle('active', state.currentPlayer === 2);
+  }
+}
+
+function changePerspective(dir) {
+  const q = currentQuestion();
+  if (q.images.length < 2) return;
+  state.perspective = (state.perspective + dir + q.images.length) % q.images.length;
+  const img = document.getElementById('q-img');
+  img.classList.add('fade');
+  setTimeout(() => {
+    img.src = encodeURI(q.images[state.perspective]);
+    img.classList.remove('fade');
+  }, 150);
+  document.getElementById('persp-indicator').textContent = `${state.perspective + 1} / ${q.images.length}`;
+}
+
+/* ──────────────  RESPUESTA ────────────── */
+function submitAnswer() {
+  if (state.answered) return;
+  const q = currentQuestion();
+  const input = document.getElementById('answer-input');
+  const raw = input.value.trim();
+  if (!raw) return;
+
+  state.answered = true;
+  const isCorrect = normalize(raw) === normalize(q.name);
+
+  // 1v1: actualizar puntaje del jugador actual
+  if (state.mode === '1v1') {
+    const p = state.currentPlayer;
+    if (isCorrect) state.scores[p].ok++; else state.scores[p].err++;
+    updateScoreboard();
+  }
+
+  // feedback UI
+  const fb = document.getElementById('feedback');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  document.getElementById('feedback-label').textContent = isCorrect ? 'Correcto' : 'Incorrecto — Nombre real';
+  document.getElementById('feedback-name').textContent = q.name;
+
+  input.disabled = true;
+  document.getElementById('answer-btn').disabled = true;
+  document.getElementById('next-row').classList.remove('hide');
+  document.getElementById('next-btn').focus();
+}
+
+function updateScoreboard() {
+  document.getElementById('p1-ok').textContent  = state.scores[1].ok + '✓';
+  document.getElementById('p1-err').textContent = state.scores[1].err + '✗';
+  document.getElementById('p2-ok').textContent  = state.scores[2].ok + '✓';
+  document.getElementById('p2-err').textContent = state.scores[2].err + '✗';
+}
+
+function nextQuestion() {
+  state.current++;
+  if (state.mode === '1v1') {
+    state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+  }
+  if (state.current >= TOTAL) {
+    renderEnd();
+  } else {
+    renderQuestion();
+  }
+}
+
+/* ──────────────  FINAL ────────────── */
+function renderEnd() {
+  document.getElementById('exam-wrap').style.display = 'none';
+  document.getElementById('exam-end').classList.add('active');
+  document.getElementById('progress-fill').style.width = '100%';
+
+  if (state.mode === '1v1') {
+    document.getElementById('final-scores').classList.add('show');
+    document.getElementById('final-p1-ok').textContent  = state.scores[1].ok + '✓';
+    document.getElementById('final-p1-err').textContent = state.scores[1].err + '✗';
+    document.getElementById('final-p2-ok').textContent  = state.scores[2].ok + '✓';
+    document.getElementById('final-p2-err').textContent = state.scores[2].err + '✗';
+
+    const p1 = state.scores[1].ok, p2 = state.scores[2].ok;
+    const p1Card = document.getElementById('final-p1');
+    const p2Card = document.getElementById('final-p2');
+    const banner = document.getElementById('winner-banner');
+    if (p1 > p2)      { p1Card.classList.add('winner'); banner.textContent = '🏆 Ganador · Estudioso 1'; }
+    else if (p2 > p1) { p2Card.classList.add('winner'); banner.textContent = '🏆 Ganador · Estudioso 2'; }
+    else              { banner.textContent = '🤝 Empate'; }
+
+    document.getElementById('end-subtitle').textContent = 'Partida finalizada. Estos son los resultados:';
+  }
+}
+
+/* ──────────────  ATAJOS DE TECLADO ────────────── */
+document.addEventListener('keydown', e => {
+  if (document.getElementById('exam-end').classList.contains('active')) return;
+
+  if (e.key === 'ArrowLeft')  changePerspective(-1);
+  if (e.key === 'ArrowRight') changePerspective(1);
+
+  if (e.key === 'Enter') {
+    if (state.mode === 'aprendizaje') {
+      nextQuestion();
+    } else if (state.answered) {
+      nextQuestion();
+    } else {
+      submitAnswer();
+    }
+  }
+});
+
+/* ──────────────  PARTÍCULAS DE FONDO ────────────── */
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+let particles = [];
+function resizeCanvas() { bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight; }
+function initParticles(n) {
+  particles = Array.from({ length: n }, () => ({
+    x: Math.random() * bgCanvas.width, y: Math.random() * bgCanvas.height,
+    vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+    r: Math.random() * 1.2 + 0.4
+  }));
+}
+function drawParticles() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  const g = bgCtx.createRadialGradient(bgCanvas.width*.5, bgCanvas.height*.4, 0, bgCanvas.width*.5, bgCanvas.height*.4, bgCanvas.width*.7);
+  g.addColorStop(0, 'rgba(10,40,80,0.35)'); g.addColorStop(1, 'rgba(2,12,26,0)');
+  bgCtx.fillStyle = g; bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 120) {
+        bgCtx.beginPath(); bgCtx.moveTo(particles[i].x, particles[i].y); bgCtx.lineTo(particles[j].x, particles[j].y);
+        bgCtx.strokeStyle = `rgba(26,127,255,${0.1*(1-d/120)})`; bgCtx.lineWidth = 0.5; bgCtx.stroke();
+      }
+    }
+  }
+  for (const p of particles) {
+    bgCtx.beginPath(); bgCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    bgCtx.fillStyle = 'rgba(0,212,255,0.45)'; bgCtx.fill();
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > bgCanvas.width)  p.vx *= -1;
+    if (p.y < 0 || p.y > bgCanvas.height) p.vy *= -1;
+  }
+  requestAnimationFrame(drawParticles);
+}
+resizeCanvas(); initParticles(40); drawParticles();
+window.addEventListener('resize', () => { resizeCanvas(); initParticles(40); });
+</script>
+</body>
+</html>
