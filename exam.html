@@ -88,6 +88,30 @@
     border: 1px solid rgba(0,212,255,0.25);
     border-radius: 999px; padding: 6px 14px;
   }
+  .solo-score {
+    display: none;
+    align-items: center; gap: 12px;
+    margin-bottom: 22px;
+    padding: 12px 20px;
+    background: rgba(4,18,34,0.7);
+    border: 1px solid rgba(26,127,255,0.15);
+    border-radius: 12px;
+  }
+  .solo-score.show { display: flex; }
+  .solo-score-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+  }
+  .solo-score-item .ok  { color: var(--correct); }
+  .solo-score-item .err { color: var(--wrong); }
+  .solo-score-divider {
+    width: 1px; height: 20px;
+    background: rgba(26,127,255,0.2); flex-shrink: 0;
+  }
+  .solo-score-label {
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--dim); font-family: 'Space Mono', monospace;
+  }
   .progress-bar {
     height: 3px; background: rgba(26,127,255,0.12); border-radius: 2px;
     margin-bottom: 22px; overflow: hidden;
@@ -390,6 +414,14 @@
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
 
+    <div class="solo-score" id="solo-score">
+      <span class="solo-score-label">Puntaje</span>
+      <div class="solo-score-divider"></div>
+      <div class="solo-score-item"><span class="ok" id="solo-ok">0</span><span class="ok">✓</span></div>
+      <div class="solo-score-divider"></div>
+      <div class="solo-score-item"><span class="err" id="solo-err">0</span><span class="err">✗</span></div>
+    </div>
+
     <div class="scoreboard" id="scoreboard">
       <div class="player-card active" id="player-1">
         <div class="player-name">Estudioso 1</div>
@@ -622,6 +654,9 @@ function init() {
     document.getElementById('scoreboard').classList.add('show');
     document.getElementById('turn-banner').classList.add('show');
   }
+  if (state.mode === 'solitario') {
+    document.getElementById('solo-score').classList.add('show');
+  }
 
   state.order = shuffle([...Array(TOTAL).keys()]);
   renderQuestion();
@@ -715,7 +750,11 @@ function submitAnswer() {
   state.answered = true;
   const isCorrect = normalize(raw) === normalize(q.name);
 
-  // 1v1: actualizar puntaje del jugador actual
+  if (state.mode === 'solitario') {
+    if (isCorrect) state.scores[1].ok++; else state.scores[1].err++;
+    document.getElementById('solo-ok').textContent  = state.scores[1].ok;
+    document.getElementById('solo-err').textContent = state.scores[1].err;
+  }
   if (state.mode === '1v1') {
     const p = state.currentPlayer;
     if (isCorrect) state.scores[p].ok++; else state.scores[p].err++;
