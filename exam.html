@@ -291,9 +291,20 @@
   /* NEXT BUTTON */
   .next-row {
     margin-top: 22px;
-    display: flex; justify-content: center;
+    display: flex; justify-content: center; gap: 12px;
   }
   .next-row.hide { display: none; }
+  .btn-outline {
+    background: transparent; color: var(--cyan);
+    border: 1.5px solid rgba(0,212,255,0.4);
+    box-shadow: 0 0 12px rgba(0,212,255,0.1);
+  }
+  .btn-outline:hover {
+    background: rgba(0,212,255,0.08);
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    transform: translateY(-1px);
+  }
+  .btn-outline:disabled { opacity: 0.25; cursor: not-allowed; transform: none; box-shadow: none; }
 
   /* END SCREEN */
   .end-card {
@@ -463,6 +474,7 @@
       </div>
 
       <div class="next-row hide" id="next-row">
+        <button class="btn btn-outline" id="prev-btn" onclick="prevQuestion()">← Anterior</button>
         <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Siguiente →</button>
       </div>
     </div>
@@ -711,10 +723,13 @@ function renderQuestion() {
     learnLabel.textContent = q.name;
     answerArea.classList.add('hide');
     nextRow.classList.remove('hide');
+    document.getElementById('prev-btn').style.display = '';
+    document.getElementById('prev-btn').disabled = state.current === 0;
   } else {
     learnLabel.classList.remove('show');
     answerArea.classList.remove('hide');
     nextRow.classList.add('hide');
+    document.getElementById('prev-btn').style.display = 'none';
     setTimeout(() => input.focus(), 50);
   }
 
@@ -778,6 +793,12 @@ function updateScoreboard() {
   document.getElementById('p1-err').textContent = state.scores[1].err + '✗';
   document.getElementById('p2-ok').textContent  = state.scores[2].ok + '✓';
   document.getElementById('p2-err').textContent = state.scores[2].err + '✗';
+}
+
+function prevQuestion() {
+  if (state.current === 0) return;
+  state.current--;
+  renderQuestion();
 }
 
 function nextQuestion() {
