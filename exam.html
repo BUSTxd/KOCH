@@ -390,7 +390,8 @@
 
   /* EXIT BUTTON */
   .exit-btn {
-    width: 40px; height: 40px; flex-shrink: 0;
+    position: fixed; top: 18px; right: 24px; z-index: 150;
+    width: 40px; height: 40px;
     background: rgba(255,91,91,0.08);
     border: 1px solid rgba(255,91,91,0.3);
     border-radius: 8px;
@@ -399,7 +400,6 @@
     display: flex; align-items: center; justify-content: center;
     text-decoration: none;
     transition: all 0.2s;
-    margin-top: 4px;
   }
   .exit-btn:hover {
     background: rgba(255,91,91,0.18);
@@ -550,6 +550,8 @@
   </div>
 </nav>
 
+<a href="dashboard.html" class="exit-btn" title="Volver al inicio">✕</a>
+
 <main>
   <div class="auth-guard" id="auth-guard">
     <p style="font-size:15px; color:var(--dim); margin-bottom:24px; text-align:center;">Debes iniciar sesión para acceder al examen.</p>
@@ -594,14 +596,11 @@
     <div class="question-card">
       <div class="learn-label" id="learn-label"></div>
 
-      <div style="position:relative; display:flex; align-items:flex-start; gap:10px;">
-        <div class="image-viewer" style="flex:1;">
-          <button class="persp-btn persp-prev" id="persp-prev" onclick="changePerspective(-1)">‹</button>
-          <img id="q-img" src="" alt="">
-          <button class="persp-btn persp-next" id="persp-next" onclick="changePerspective(1)">›</button>
-          <div class="persp-indicator" id="persp-indicator">1 / 1</div>
-        </div>
-        <a href="dashboard.html" class="exit-btn" title="Volver al inicio">✕</a>
+      <div class="image-viewer">
+        <button class="persp-btn persp-prev" id="persp-prev" onclick="changePerspective(-1)">‹</button>
+        <img id="q-img" src="" alt="">
+        <button class="persp-btn persp-next" id="persp-next" onclick="changePerspective(1)">›</button>
+        <div class="persp-indicator" id="persp-indicator">1 / 1</div>
       </div>
 
       <div class="answer-area" id="answer-area">
