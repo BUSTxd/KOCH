@@ -925,7 +925,7 @@ function submitAnswer() {
   input.disabled = true;
   document.getElementById('answer-btn').disabled = true;
   document.getElementById('next-row').classList.remove('hide');
-  document.getElementById('next-btn').focus();
+  setTimeout(() => document.getElementById('next-btn').focus(), 150);
 }
 
 function updateScoreboard() {
