@@ -671,7 +671,7 @@ async function handleLogout() {
    75 imágenes consolidadas en 70 preguntas únicas.
    4 estructuras con perspectivas múltiples agrupadas. */
 const QUESTIONS = [
-  { name: 'Arteria interventricular (descendente posterior)', images: ['imagenes/Arteria interventricular anterior (descendente posterior).webp'] },
+  { name: 'Arteria interventricular (descendente posterior)', aliases: ['arteria interventricular descendente posterior', 'arteria descendente posterior', 'descendente posterior', 'arteria interventricular posterior'], images: ['imagenes/Arteria interventricular anterior (descendente posterior).webp'] },
   { name: 'Arteria interventricular anterior',                         images: ['imagenes/Arteria interventricular anterior.webp'] },
   { name: 'Arteria marginal izquierda',                                images: ['imagenes/Arteria marginal izquierda.webp'] },
   { name: 'Cuerdas tendinosas de la válvula tricúspide',               images: ['imagenes/Cuerdas tendinosas de la válvula tricuspide.webp'] },
@@ -712,7 +712,7 @@ const QUESTIONS = [
   { name: 'Nervio cardiaco inferior izquierdo',                        images: ['imagenes/nervio cardiaco inferior izquierdo.webp'] },
   { name: 'Nervio cardiaco superior izquierdo',                        images: ['imagenes/nervio cardiaco superior izquierdo.webp'] },
   // GROUP: Nodo AV (2 perspectivas)
-  { name: 'Nodo AV', images: [
+  { name: 'Nodo AV', aliases: ['nodo auriculoventricular', 'nodulo av', 'nodulo auriculoventricular'], images: [
     'imagenes/nodo av.webp',
     'imagenes/nodo av (1).webp'
   ]},
@@ -720,22 +720,22 @@ const QUESTIONS = [
   { name: 'Orejuela derecha',                                          images: ['imagenes/orejuela derecha.webp'] },
   { name: 'Orejuela izquierda',                                        images: ['imagenes/orejuela izquierda.webp'] },
   { name: 'Plexo cardiaco',                                            images: ['imagenes/plexo cardiaco.webp'] },
-  { name: 'Rama atrial de la arteria circunfleja izquierda',           images: ['imagenes/rama atrial de la arteria circunfleja izquierda.webp'] },
-  { name: 'Rama auricular de la arteria coronaria derecha',            images: ['imagenes/rama auricular de la arteria coronaria derecha.webp'] },
-  { name: 'Rama cardíaca cervical inferior izquierda',                 images: ['imagenes/rama cardiaca cervical inferior izquierda.webp'] },
-  { name: 'Rama cardíaca cervical superior izquierda',                 images: ['imagenes/rama cardiaca cervical superior izquierda.webp'] },
-  { name: 'Rama cardíaca torácica derecha',                            images: ['imagenes/rama cardiaca toracica derecha.webp'] },
-  { name: 'Rama cardíaca cervical superior derecha',                   images: ['imagenes/rama cardíaca cervical superior derecha.webp'] },
-  { name: 'Rama circunfleja de la arteria coronaria izquierda',        images: ['imagenes/rama circunfleja de la arteria coronaria izquierda.webp'] },
-  { name: 'Rama del nodo AV de la arteria coronaria derecha',          images: ['imagenes/rama del nodo AV de la arteria coronaria derecha.webp'] },
-  { name: 'Rama del nodo sinoauricular (arteria coronaria derecha)',   images: ['imagenes/rama del nodo sinoauricular (arteria coronaria derecha).webp'] },
-  { name: 'Rama derecha inferior cervical cardiaca',                   images: ['imagenes/rama derecha inferior cervical cardiaca.webp'] },
-  { name: 'Rama diagonal de la arteria interventricular anterior',     images: ['imagenes/rama diagonal de la arteria interventricular anterior.webp'] },
-  { name: 'Rama infundibular de la arteria coronaria derecha',         images: ['imagenes/rama infundibular de la arteria coronaria derecha.webp'] },
-  { name: 'Rama izquierda del haz de His',                             images: ['imagenes/rama izquierda del haz de his.webp'] },
-  { name: 'Rama posterolateral derecha',                               images: ['imagenes/rama posterolateral derecha.webp'] },
-  { name: 'Rama torácica cardiaca izquierda',                          images: ['imagenes/rama toracica cardiaca izquierda.webp'] },
-  { name: 'Ramas septales de la arteria interventricular anterior',    images: ['imagenes/ramas septales de la arteria interventricular anterior.webp'] },
+  { name: 'Rama atrial de la arteria circunfleja izquierda', aliases: ['arteria atrial circunfleja', 'rama atrial circunfleja', 'arteria atrial izquierda', 'rama atrial izquierda'], images: ['imagenes/rama atrial de la arteria circunfleja izquierda.webp'] },
+  { name: 'Rama auricular de la arteria coronaria derecha', aliases: ['arteria auricular derecha', 'rama auricular derecha', 'arteria auricular coronaria derecha'], images: ['imagenes/rama auricular de la arteria coronaria derecha.webp'] },
+  { name: 'Rama cardíaca cervical inferior izquierda', aliases: ['nervio cardiaco cervical inferior izquierdo', 'cardiaca cervical inferior izquierda', 'nervio cardiaco cervical inferior izquierda'], images: ['imagenes/rama cardiaca cervical inferior izquierda.webp'] },
+  { name: 'Rama cardíaca cervical superior izquierda', aliases: ['nervio cardiaco cervical superior izquierdo', 'cardiaca cervical superior izquierda', 'nervio cardiaco cervical superior izquierda'], images: ['imagenes/rama cardiaca cervical superior izquierda.webp'] },
+  { name: 'Rama cardíaca torácica derecha', aliases: ['nervio cardiaco toracico derecho', 'cardiaca toracica derecha', 'nervio cardiaco toracica derecha'], images: ['imagenes/rama cardiaca toracica derecha.webp'] },
+  { name: 'Rama cardíaca cervical superior derecha', aliases: ['nervio cardiaco cervical superior derecho', 'cardiaca cervical superior derecha', 'nervio cardiaco cervical superior derecha'], images: ['imagenes/rama cardíaca cervical superior derecha.webp'] },
+  { name: 'Rama circunfleja de la arteria coronaria izquierda', aliases: ['arteria circunfleja', 'circunfleja izquierda', 'arteria circunfleja izquierda', 'rama circunfleja izquierda'], images: ['imagenes/rama circunfleja de la arteria coronaria izquierda.webp'] },
+  { name: 'Rama del nodo AV de la arteria coronaria derecha', aliases: ['arteria del nodo av', 'rama nodo av', 'arteria nodo av coronaria derecha', 'rama del nodo av'], images: ['imagenes/rama del nodo AV de la arteria coronaria derecha.webp'] },
+  { name: 'Rama del nodo sinoauricular (arteria coronaria derecha)', aliases: ['arteria del nodo sinoauricular', 'rama sinoauricular', 'arteria sinoauricular', 'rama del nodo sinoauricular'], images: ['imagenes/rama del nodo sinoauricular (arteria coronaria derecha).webp'] },
+  { name: 'Rama derecha inferior cervical cardiaca', aliases: ['nervio cardiaco cervical inferior derecho', 'cardiaca cervical inferior derecha', 'nervio cardiaco cervical inferior derecha'], images: ['imagenes/rama derecha inferior cervical cardiaca.webp'] },
+  { name: 'Rama diagonal de la arteria interventricular anterior', aliases: ['arteria diagonal', 'rama diagonal', 'arteria diagonal interventricular'], images: ['imagenes/rama diagonal de la arteria interventricular anterior.webp'] },
+  { name: 'Rama infundibular de la arteria coronaria derecha', aliases: ['arteria infundibular', 'infundibular derecha', 'arteria infundibular derecha', 'rama infundibular derecha'], images: ['imagenes/rama infundibular de la arteria coronaria derecha.webp'] },
+  { name: 'Rama izquierda del haz de His', aliases: ['haz de his izquierdo', 'rama izquierda haz his', 'haz his izquierdo'], images: ['imagenes/rama izquierda del haz de his.webp'] },
+  { name: 'Rama posterolateral derecha', aliases: ['arteria posterolateral derecha', 'posterolateral derecha'], images: ['imagenes/rama posterolateral derecha.webp'] },
+  { name: 'Rama torácica cardiaca izquierda', aliases: ['nervio cardiaco toracico izquierdo', 'toracica cardiaca izquierda', 'nervio cardiaco toracica izquierda'], images: ['imagenes/rama toracica cardiaca izquierda.webp'] },
+  { name: 'Ramas septales de la arteria interventricular anterior', aliases: ['arterias septales', 'ramas septales', 'arterias septales interventricular', 'ramas septales interventricular'], images: ['imagenes/ramas septales de la arteria interventricular anterior.webp'] },
   { name: 'Seno coronario',                                            images: ['imagenes/seno coronario.webp'] },
   { name: 'Septo interauricular',                                      images: ['imagenes/septo interauricular.webp'] },
   { name: 'Septo interventricular',                                    images: ['imagenes/septo interventricular.webp'] },
@@ -751,7 +751,7 @@ const QUESTIONS = [
   { name: 'Vena cava inferior',                                        images: ['imagenes/vena cava inferior.webp'] },
   { name: 'Vena interventricular anterior',                            images: ['imagenes/vena interventricular anterior.webp'] },
   { name: 'Vena marginal derecha',                                     images: ['imagenes/vena marginal derecha.webp'] },
-  { name: 'Vena oblicua de la aurícula izquierda (vena de Marshall)',  images: ['imagenes/vena oblicua de la aurícula izquierda (vena de Marshall).webp'] },
+  { name: 'Vena oblicua de la aurícula izquierda (vena de Marshall)', aliases: ['vena de marshall', 'vena marshall', 'vena oblicua auricula izquierda', 'vena oblicua de la auricula izquierda'], images: ['imagenes/vena oblicua de la aurícula izquierda (vena de Marshall).webp'] },
   { name: 'Vena posterior del ventrículo izquierdo',                   images: ['imagenes/vena posterior del ventriculo izquierdo.webp'] },
   // GROUP: Válvula Pulmonar (2 perspectivas)
   { name: 'Válvula pulmonar', images: [
@@ -903,7 +903,9 @@ function submitAnswer() {
   if (!raw) return;
 
   state.answered = true;
-  const isCorrect = normalize(raw) === normalize(q.name);
+  const normRaw = normalize(raw);
+  const isCorrect = normRaw === normalize(q.name) ||
+    (q.aliases || []).some(a => normRaw === normalize(a));
 
   if (state.mode === 'solitario') {
     if (isCorrect) state.scores[1].ok++; else state.scores[1].err++;
