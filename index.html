@@ -262,7 +262,9 @@
   }
   .team-name {
     font-size: 20px; font-weight: 700; margin-bottom: 6px;
+    text-decoration: none; color: var(--white); transition: color 0.2s;
   }
+  .team-name:hover { color: var(--cyan); }
   .team-role {
     font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase;
     color: var(--cyan); font-family: 'Space Mono', monospace; margin-bottom: 10px;
@@ -463,13 +465,13 @@
     <div class="team-grid reveal">
       <div class="team-card">
         <div class="team-avatar">F</div>
-        <div class="team-name">Fernand Durand</div>
+        <a class="team-name" href="https://www.linkedin.com/in/fernand-gonzalo-durand-bustamante-72abb435b/" target="_blank" rel="noopener">Fernand Durand</a>
         <div class="team-role">Fundador</div>
         <div class="team-univ">Universidad Peruana Cayetano Heredia</div>
       </div>
       <div class="team-card">
         <div class="team-avatar">S</div>
-        <div class="team-name">Sofía Colchado</div>
+        <a class="team-name" href="https://www.linkedin.com/in/sofia-colchado" target="_blank" rel="noopener">Sofía Colchado</a>
         <div class="team-role">Fundadora</div>
         <div class="team-univ">Universidad Peruana Cayetano Heredia</div>
       </div>
